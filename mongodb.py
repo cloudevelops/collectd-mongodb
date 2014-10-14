@@ -27,6 +27,7 @@ def mongo_connect(host=None, port=None, ssl=False, user=None, passwd=None, repli
                 con = pymongo.Connection(host, port, slave_okay=True, network_timeout=10)
                 #con = pymongo.Connection(host, port, slave_okay=True, replicaSet=replica, network_timeout=10)
 
+
         if user and passwd:
             db = con["admin"]
             if not db.authenticate(user, passwd):
@@ -62,7 +63,8 @@ class MongoDB(object):
         self.plugin_name = "mongo"
         self.mongo_host = "127.0.0.1"
         self.mongo_port = 27017
-        self.mongo_db = ["admin", ]
+        # self.mongo_db = ["admin", ]
+        self.mongo_db = pymongo.Connection().database_names()
         self.mongo_user = None
         self.mongo_password = None
 
@@ -84,7 +86,6 @@ class MongoDB(object):
         v.values = [value, ]
         v.dispatch()
 
-
     def do_server_status(self):
         host = self.mongo_host
         port = self.mongo_port
@@ -96,6 +97,7 @@ class MongoDB(object):
         if self.mongo_user and self.mongo_password:
             db.authenticate(self.mongo_user, self.mongo_password)
         server_status = db.command('serverStatus')
+
 
         version = server_status['version']
         at_least_2_4 = V(version) >= V('2.4.0')
@@ -294,9 +296,11 @@ class MongoDB(object):
                 self.mongo_password = node.values[0]
             elif node.key == 'Database':
                 self.mongo_db = node.values
+                # raise SystemExit(self.mongo_db)
             else:
                 collectd.warning("mongodb plugin: Unkown configuration key %s" % node.key)
 
 mongodb = MongoDB()
 collectd.register_read(mongodb.do_server_status)
 collectd.register_config(mongodb.config)
+
